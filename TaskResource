@@ -1,0 +1,114 @@
+@MobileApi
+@PutMapping("/tasks/{id}/status/{status}")
+@Transactional
+public ResponseEntity<TaskDTO> updateTaskStatus(@PathVariable Long id, @PathVariable Status status) {
+    log.debug(LOG_REST_REQUEST, id);
+
+    return taskRepository.findById(id)
+            .map(task -> handleTaskStatusUpdate(task, status))
+            .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
+}
+
+private ResponseEntity<TaskDTO> handleTaskStatusUpdate(Task task, Status status) {
+    validateCompletedTaskStatusChange(task);
+
+    if (!canUpdateStatus(task, status)) {
+        return buildInvalidStatusResponse();
+    }
+
+    task.setStatus(status);
+    return ResponseEntity.ok(taskMapper.toDto(taskRepository.save(task)));
+}
+
+private void validateCompletedTaskStatusChange(Task task) {
+    if (task.getStatus() != Status.DONE && task.getStatus() != Status.DONE_WITH_DELAY) {
+        return;
+    }
+
+    boolean isDependencyOfOtherTask = !taskRepository.findAllByRelatedTaskAndStatusIn(
+            task,
+            Arrays.asList(Status.DONE, Status.DONE_WITH_DELAY)
+    ).isEmpty();
+
+    if (isDependencyOfOtherTask) {
+        throw new BadRequestAlertException(ErrorConstants.INVALID_TASK_STATUS_KEY);
+    }
+}
+
+private boolean canUpdateStatus(Task task, Status status) {
+    if (task.getRelatedTask() == null) {
+        return true;
+    }
+
+    Status relatedTaskStatus = task.getRelatedTask().getStatus();
+    if (relatedTaskStatus == Status.DONE || relatedTaskStatus == Status.DONE_WITH_DELAY) {
+        return true;
+    }
+
+    return status == Status.UNDONE || status == Status.WAITING_ACTION_THIRD_PARTY;
+}
+
+private ResponseEntity<TaskDTO> buildInvalidStatusResponse() {
+    return ResponseEntity.badRequest()
+            .headers(HeaderUtil.createFailureAlert(
+                    ENTITY_NAME,
+                    ErrorConstants.INVALID_TASK_STATUS_KEY,
+                    ERROR_USER))
+            .body(null);
+}
+
+
+
+
+
+
+
+@MobileApi
+@PutMapping("/tasks/{id}/status/{status}")
+@Transactional
+public ResponseEntity<TaskDTO> updateTaskStatus(@PathVariable Long id, @PathVariable Status status) {
+    log.debug(LOG_REST_REQUEST, id);
+
+    return taskRepository.findById(id).map(task -> {
+        TaskDTO taskDTO = null;
+
+        validateCompletedTaskStatusChange(task);
+
+        if (isAllowedStatusUpdate(task, status)) {
+            task.setStatus(status);
+        } else {
+            return ResponseEntity.badRequest()
+                    .headers(HeaderUtil.createFailureAlert(
+                            ENTITY_NAME,
+                            ErrorConstants.INVALID_TASK_STATUS_KEY,
+                            ERROR_USER))
+                    .body(taskDTO);
+        }
+
+        return ResponseEntity.ok(taskMapper.toDto(taskRepository.save(task)));
+    }).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
+}
+private void validateCompletedTaskStatusChange(Task task) {
+    if (task.getStatus() == Status.DONE || task.getStatus() == Status.DONE_WITH_DELAY) {
+        boolean isDependencyOfOtherTask = !taskRepository.findAllByRelatedTaskAndStatusIn(
+                task,
+                Arrays.asList(Status.DONE, Status.DONE_WITH_DELAY)
+        ).isEmpty();
+
+        if (isDependencyOfOtherTask) {
+            throw new BadRequestAlertException(ErrorConstants.INVALID_TASK_STATUS_KEY);
+        }
+    }
+}
+private boolean isAllowedStatusUpdate(Task task, Status status) {
+    if (task.getRelatedTask() == null) {
+        return true;
+    }
+
+    if (task.getRelatedTask().getStatus() == Status.DONE
+            || task.getRelatedTask().getStatus() == Status.DONE_WITH_DELAY) {
+        return true;
+    }
+
+    return status == Status.UNDONE || status == Status.WAITING_ACTION_THIRD_PARTY;
+}
