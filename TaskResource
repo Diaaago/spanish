@@ -112,3 +112,35 @@ private boolean isAllowedStatusUpdate(Task task, Status status) {
 
     return status == Status.UNDONE || status == Status.WAITING_ACTION_THIRD_PARTY;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@MobileApi
+@GetMapping("/tasks/process/{processId}/team/{teamId}")
+public ResponseEntity<List<TaskDTO>> getAllTasksByProcessAndTeam(@PathVariable Long processId, @PathVariable Long teamId) {
+    return ResponseEntity.ok().body(taskMapper.toDto(
+            taskRepository.findAllByProcessIsAndActorIs(
+                    processRepository.getReferenceById(processId), teamRepository.getReferenceById(teamId)
+            )));
+}
+
+@MobileApi
+@GetMapping("/tasks/process/{processId}/subProcess/{subProcessId}")
+public ResponseEntity<List<TaskDTO>> getAllTasksByProcessAndSubProcess(@PathVariable Long processId, @PathVariable Long subProcessId) {
+    return ResponseEntity.ok().body(taskMapper.toDto(
+            taskRepository.findAllByProcessIsAndSubProcessIs(
+                    processRepository.getReferenceById(processId), subProcessRepository.getReferenceById(subProcessId)
+            )));
+}
