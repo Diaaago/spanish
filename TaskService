@@ -1,0 +1,157 @@
+public TaskDTO createTask(TaskDTO taskDTO, Long processId) {
+    Process process = processRepository.findById(processId)
+            .orElseThrow(() -> new InternalServerErrorException(PROCESS_NOT_FOUND));
+
+    Task task = taskMapper.toEntity(taskDTO);
+
+    applyExpectedEndDate(task, processId);
+    task.setProcess(process);
+
+    task = taskRepository.save(task);
+
+    Optional<User> optionalUser = SecurityUtils.getCurrentUserLogin()
+            .flatMap(userRepository::findOneByLogin);
+
+    createDependencyCommentIfNeeded(task, optionalUser);
+    createAdminCommentIfPresent(taskDTO, task, optionalUser);
+
+    return taskMapper.toDto(task);
+}
+private void applyExpectedEndDate(Task task, Long processId) {
+    if (task.getCalculationType() == CalculationType.CALENDAR_DAY) {
+        task.setExpectedEndDate(this.calculateCalendarDay(task, processId));
+    } else {
+        task.setExpectedEndDate(this.calculateWorkDay(task, processId));
+    }
+}
+private void applyExpectedEndDate(Task task, Long processId) {
+    if (task.getCalculationType() == CalculationType.CALENDAR_DAY) {
+        task.setExpectedEndDate(this.calculateCalendarDay(task, processId));
+    } else {
+        task.setExpectedEndDate(this.calculateWorkDay(task, processId));
+    }
+}
+private void createAdminCommentIfPresent(TaskDTO taskDTO, Task task, Optional<User> optionalUser) {
+    if (taskDTO.getAdminComment() == null) {
+        return;
+    }
+
+    Comment comment = new Comment();
+    comment.setDate(LocalDateTime.now());
+    comment.setComment(taskDTO.getAdminComment());
+    optionalUser.ifPresent(comment::setAuthor);
+    comment.setTask(task);
+    commentRepository.save(comment);
+}
+private void createAdminCommentIfPresent(TaskDTO taskDTO, Task task, Optional<User> optionalUser) {
+    if (taskDTO.getAdminComment() == null) {
+        return;
+    }
+
+    Comment comment = new Comment();
+    comment.setDate(LocalDateTime.now());
+    comment.setComment(taskDTO.getAdminComment());
+    optionalUser.ifPresent(comment::setAuthor);
+    comment.setTask(task);
+    commentRepository.save(comment);
+}
+
+
+
+
+public TaskDTO updateTask(TaskDTO taskDTO, Long processId) {
+    Task taskDatabase = taskRepository.findById(taskDTO.getId())
+            .orElseThrow(() -> new NotFoundAlertException(""));
+
+    Task task = taskMapper.toEntity(taskDTO);
+
+    validateTaskUpdate(taskDatabase, task);
+
+    updateSchedulingFields(taskDatabase, taskDTO, task, processId);
+    updateBasicFields(taskDatabase, task);
+
+    Optional<User> optionalUser = SecurityUtils.getCurrentUserLogin()
+            .flatMap(userRepository::findOneByLogin);
+
+    createDependencyComment(task, taskDatabase).ifPresent(comment -> {
+        optionalUser.ifPresent(comment::setAuthor);
+        comment.setTask(task);
+        commentRepository.save(comment);
+    });
+
+    createAdminCommentIfPresent(taskDTO, task, optionalUser);
+
+    taskDatabase.setRelatedTeam(task.getRelatedTeam());
+    taskDatabase.setRelatedTask(task.getRelatedTask());
+
+    return taskMapper.toDto(taskDatabase);
+}
+private void validateTaskUpdate(Task taskDatabase, Task task) {
+    if (taskDatabase.getStatus() == Status.DONE
+            || taskDatabase.getStatus() == Status.DONE_WITH_DELAY) {
+        boolean isDependencyOfOtherTask = !taskRepository
+                .findAllByRelatedTaskAndStatusIn(task, Arrays.asList(Status.DONE, Status.DONE_WITH_DELAY))
+                .isEmpty();
+
+        if (isDependencyOfOtherTask) {
+            throw new BadRequestAlertException(ErrorConstants.INVALID_TASK_STATUS_KEY);
+        }
+    }
+
+    if (task.getRelatedTask() != null) {
+        taskRepository.findById(task.getRelatedTask().getId()).ifPresent(relatedTask -> {
+            if (relatedTask.getStatus() == Status.DONE
+                    || relatedTask.getStatus() == Status.DONE_WITH_DELAY) {
+                taskDatabase.setStatus(task.getStatus());
+            } else if (task.getStatus() == Status.UNDONE
+                    || task.getStatus() == Status.WAITING_ACTION_THIRD_PARTY) {
+                taskDatabase.setStatus(task.getStatus());
+            } else {
+                throw new BadRequestAlertException(ErrorConstants.INVALID_TASK_STATUS_KEY);
+            }
+        });
+    } else {
+        taskDatabase.setStatus(task.getStatus());
+    }
+}
+private void updateSchedulingFields(Task taskDatabase, TaskDTO taskDTO, Task task, Long processId) {
+    taskDatabase.setEndDate(taskDTO.getEndDate());
+    taskDatabase.setCalculation(task.getCalculation());
+    taskDatabase.setCalculationType(task.getCalculationType());
+
+    if (taskDTO.getCalculationType() == CalculationType.CALENDAR_DAY) {
+        taskDatabase.setExpectedEndDate(this.calculateCalendarDay(taskDatabase, processId));
+    } else {
+        taskDatabase.setExpectedEndDate(this.calculateWorkDay(taskDatabase, processId));
+    }
+}
+private void updateBasicFields(Task taskDatabase, Task task) {
+    taskDatabase.setReceiver(task.getReceiver());
+    taskDatabase.setActor(task.getActor());
+    taskDatabase.setName(task.getName());
+    taskDatabase.setSubProcess(task.getSubProcess());
+    taskDatabase.setDuplicated(task.isDuplicated());
+}
+private void createAdminCommentIfPresent(TaskDTO taskDTO, Task task, Optional<User> optionalUser) {
+    if (taskDTO.getAdminComment() == null) {
+        return;
+    }
+
+    Comment comment = new Comment();
+    comment.setDate(LocalDateTime.now());
+    comment.setComment(taskDTO.getAdminComment());
+    optionalUser.ifPresent(comment::setAuthor);
+    comment.setTask(task);
+    commentRepository.save(comment);
+}
+
+
+createTask(...)
+  applyExpectedEndDate
+  createDependencyCommentIfNeeded
+  createAdminCommentIfPresent                                    
+updateTask(...)
+  validateTaskUpdate
+  updateSchedulingFields
+  updateBasicFields
+  createAdminCommentIfPresent
