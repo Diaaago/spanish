@@ -1,0 +1,216 @@
+private String getRequiredTaskName(Row row, int rowIndex) throws RowMappingException {
+    String taskName = getString(row, NAME_INDEX);
+    if (StringUtils.isEmpty(taskName)) {
+        log.debug("ignoring task with empty name");
+        throw new SkipDataException(new ValidationException("Empty line : "), row, rowIndex);
+    }
+    return taskName;
+}
+private Task buildBaseTask(Row row, int rowIndex, String taskName) throws RowMappingException {
+    Task task = new Task();
+    task.setName(taskName);
+
+    String providerTeamName = getString(row, PROVIDER_INDEX);
+    if (!StringUtils.isEmpty(providerTeamName)) {
+        task.setActor(this.findTeamByName(providerTeamName, row, rowIndex));
+    }
+
+    String customerTeamName = getString(row, CUSTOMER_INDEX);
+    if (!StringUtils.isEmpty(customerTeamName)) {
+        task.setReceiver(this.findTeamByName(customerTeamName, row, rowIndex));
+    }
+
+    task.setEndDate(resolveEndDate(row, rowIndex, taskName));
+
+    String subProcessName = getString(row, SUB_PROCESS_INDEX);
+    if (!StringUtils.isEmpty(subProcessName)) {
+        task.setSubProcess(findSubProcess(subProcessName, taskName, row, rowIndex));
+    }
+
+    task.setProcess(process);
+    task.setStatus(Status.UNDONE);
+    task.setDuplicated(false);
+
+    return task;
+}
+private LocalDateTime resolveEndDate(Row row, int rowIndex, String taskName) throws RowMappingException {
+    String hour = getString(row, HOUR_INDEX);
+    if (StringUtils.isEmpty(hour)) {
+        throw new RowMappingException(
+                new ValidationException("Deadline Hour not found for task " + taskName),
+                row,
+                rowIndex
+        );
+    }
+
+    try {
+        return endDate.with(TemporalAdjusters.firstDayOfMonth())
+                .atTime(LocalTime.parse(hour, HOUR_FORMAT));
+    } catch (DateTimeParseException e) {
+        throw new RowMappingException(e, row, rowIndex);
+    }
+}
+private SubProcess findSubProcess(String subProcessName, String taskName, Row row, int rowIndex)
+        throws RowMappingException {
+    return subProcessRepository.findAllByNameAndProcess(subProcessName, process)
+            .stream()
+            .sorted(Comparator.comparing(AbstractAuditingEntity::getCreatedDate))
+            .findFirst()
+            .orElseThrow(() -> new RowMappingException(
+                    new ValidationException("sub process " + subProcessName + " not found for task " + taskName),
+                    row,
+                    rowIndex
+            ));
+}
+private CalculationType resolveCalculationType(Row row, int rowIndex, String taskName)
+        throws RowMappingException {
+    String calculationType = getString(row, CALCULATION_TYPE_INDEX);
+
+    if (StringUtils.isEmpty(calculationType)) {
+        throw new RowMappingException(
+                new ValidationException("calculation rule 2 not found for task " + taskName),
+                row,
+                rowIndex
+        );
+    }
+
+    if (calculationType.equals(CALENDAR_WORKING_DAY_CALCULATION_TYPE)) {
+        return CalculationType.OPEN_DAY;
+    }
+
+    if (calculationType.equals(CALENDAR_CALCULATION_TYPE)) {
+        return CalculationType.CALENDAR_DAY;
+    }
+
+    throw new RowMappingException(
+            new ValidationException("Calculous Rule 2 value unknown for task " + taskName),
+            row,
+            rowIndex
+    );
+}
+private void validateDeadlineInputs(
+        Date expectedEndDate,
+        Double calculous,
+        String taskName,
+        Row row,
+        int rowIndex) throws RowMappingException {
+
+    if (expectedEndDate != null && calculous != null) {
+        throw new RowMappingException(
+                new ValidationException("Deadline Day or Calculous Rule 1 must be empty for task: " + taskName),
+                row,
+                rowIndex
+        );
+    }
+
+    if (expectedEndDate == null && calculous == null) {
+        throw new RowMappingException(
+                new ValidationException("one of Deadline Day or Calculous Rule 1 must not be empty for task: " + taskName),
+                row,
+                rowIndex
+        );
+    }
+}
+private void populateScheduling(
+        Task task,
+        Date expectedEndDate,
+        Double calculous,
+        String taskName,
+        Row row,
+        int rowIndex) throws RowMappingException {
+
+    if (calculous != null) {
+        populateFromCalculous(task, calculous, taskName, row, rowIndex);
+        return;
+    }
+
+    populateFromExpectedEndDate(task, expectedEndDate, row, rowIndex);
+}
+private void populateFromCalculous(
+        Task task,
+        Double calculous,
+        String taskName,
+        Row row,
+        int rowIndex) throws RowMappingException {
+    try {
+        task.setCalculation(calculous.intValue());
+
+        if (task.getCalculationType() == CalculationType.CALENDAR_DAY) {
+            task.setExpectedEndDate(taskService.calculateCalendarDay(task, process.getId()));
+        } else {
+            task.setExpectedEndDate(taskService.calculateWorkDay(task, process.getId()));
+        }
+    } catch (NumberFormatException e) {
+        throw new RowMappingException(
+                new ValidationException(
+                        "Calculous Rule 1 value " + calculous + " is not a number for task: " + taskName, e),
+                row,
+                rowIndex
+        );
+    } catch (ValidationException e) {
+        throw new RowMappingException(e, row, rowIndex);
+    }
+}
+private void populateFromExpectedEndDate(
+        Task task,
+        Date expectedEndDate,
+        Row row,
+        int rowIndex) throws RowMappingException {
+    try {
+        task.setExpectedEndDate(
+                expectedEndDate.toInstant()
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate()
+                        .atTime(task.getEndDate().toLocalTime())
+        );
+
+        if (task.getCalculationType() == CalculationType.CALENDAR_DAY) {
+            task.setCalculation(taskService.calculateTaskCalculationCalendarDay(task, process));
+        } else {
+            task.setCalculation(taskService.calculateTaskCalculationWorkDay(task, process));
+        }
+    } catch (ValidationException e) {
+        throw new RowMappingException(e, row, rowIndex);
+    }
+}
+private void addCommentIfPresent(Task task, Row row) {
+    String commentString = getString(row, COMMENT_INDEX);
+    if (StringUtils.isEmpty(commentString) || commentString.trim().isEmpty()) {
+        return;
+    }
+
+    Set<Comment> comments = new HashSet<>();
+    Comment comment = new Comment();
+    comment.setComment(commentString);
+    comment.setDate(LocalDateTime.now());
+
+    User user = new User();
+    user.setId(userId);
+
+    comment.setAuthor(user);
+    comment.setTask(task);
+    comments.add(comment);
+    task.setComments(comments);
+}
+@Override
+public Task mapRow(Row row, int rowIndex) throws RowMappingException {
+    log.info("try to map row index: {} = {}", rowIndex, row.getSheet().getSheetName());
+
+    String taskName = getRequiredTaskName(row, rowIndex);
+    log.info("mapping task: {}", taskName);
+
+    Task task = buildBaseTask(row, rowIndex, taskName);
+
+    task.setCalculationType(resolveCalculationType(row, rowIndex, taskName));
+
+    Date expectedEndDate = getDate(row, EXPECTED_END_DATE_INDEX);
+    Double calculous = getDouble(row, CALCULOUS_INDEX);
+
+    validateDeadlineInputs(expectedEndDate, calculous, taskName, row, rowIndex);
+    populateScheduling(task, expectedEndDate, calculous, taskName, row, rowIndex);
+
+    task.setJobId(jobId);
+    addCommentIfPresent(task, row);
+
+    return task;
+}
