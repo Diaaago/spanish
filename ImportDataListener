@@ -1,0 +1,34 @@
+private String buildStepMessage(StepExecution stepExecution) {
+    StringBuilder buffer = new StringBuilder();
+
+    if (IMPORT_TASK_STEP.equals(stepExecution.getStepName())) {
+        buffer.append(stepExecution.getWriteCount()).append(" Tasks on ").append(stepExecution.getReadCount());
+    } else if (IMPORT_SUBPROCESS_STEP.equals(stepExecution.getStepName())) {
+        buffer.append(stepExecution.getWriteCount()).append(" Sub-process on ").append(stepExecution.getReadCount());
+    } else if (IMPORT_TEAM_STEP.equals(stepExecution.getStepName())) {
+        buffer.append(stepExecution.getWriteCount()).append(" Teams on ").append(stepExecution.getReadCount());
+    } else if (IMPORT_USER_STEP.equals(stepExecution.getStepName())) {
+        buffer.append(stepExecution.getWriteCount()).append(" Users on ").append(stepExecution.getReadCount());
+    }
+
+    return buffer.toString();
+}
+private boolean isPartialStep(StepExecution stepExecution) {
+    return stepExecution.getWriteCount() != stepExecution.getReadCount();
+}
+private void addSuccessMessage(JobExecution jobExecution) {
+    boolean isPartial = jobExecution.getStepExecutions().stream()
+            .anyMatch(this::isPartialStep);
+
+    String message = jobExecution.getStepExecutions().stream()
+            .map(this::buildStepMessage)
+            .collect(Collectors.joining(", "));
+
+    if (isPartial) {
+        message = "Excel file has been partially integrated : " + message;
+    } else {
+        message = "Excel file has been fully integrated : " + message;
+    }
+
+    this.addMessage(jobExecution, message);
+}
