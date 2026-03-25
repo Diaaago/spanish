@@ -1,0 +1,15 @@
+return processMapper.toDto(process);
+
+return new SubProcess()
+        .name(name)
+        .color(color);
+
+return new Task()
+        .name(DEFAULT_NAME)
+        .expectedEndDate(DEFAULT_EXPECTED_END_DATE)
+        .endDate(DEFAULT_END_DATE)
+        .calculationType(DEFAULT_CALCULATION_TYPE)
+        .status(DEFAULT_STATUS)
+        .calculation(DEFAULT_CALCULATION);
+
+return new Weather();
