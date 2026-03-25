@@ -214,3 +214,142 @@ public Task mapRow(Row row, int rowIndex) throws RowMappingException {
 
     return task;
 }
+
+
+
+
+
+
+
+
+Date expectedEndDate = getDate(row, EXPECTED_END_DATE_INDEX);
+Double calculous = getDouble(row, CALCULOUS_INDEX);
+
+if (expectedEndDate != null && calculous != null) {
+    throw new RowMappingException(
+            new ValidationException("Deadline Day or Calculous Rule 1 must be empty for task: " + taskName),
+            row,
+            rowIndex
+    );
+}
+
+if (expectedEndDate == null && calculous == null) {
+    throw new RowMappingException(
+            new ValidationException("one of Deadline Day or Calculous Rule 1 must not be empty for task: " + taskName),
+            row,
+            rowIndex
+    );
+}
+
+if (calculous != null) {
+    try {
+        task.setCalculation(calculous.intValue());
+
+        if (task.getCalculationType() == CalculationType.CALENDAR_DAY) {
+            task.setExpectedEndDate(taskService.calculateCalendarDay(task, process.getId()));
+        } else {
+            task.setExpectedEndDate(taskService.calculateWorkDay(task, process.getId()));
+        }
+    } catch (NumberFormatException e) {
+        throw new RowMappingException(
+                new ValidationException("Calculous Rule 1 value " + calculous + " is not a number for task: " + taskName, e),
+                row,
+                rowIndex
+        );
+    } catch (ValidationException e) {
+        throw new RowMappingException(e, row, rowIndex);
+    }
+} else {
+    try {
+        task.setExpectedEndDate(
+                expectedEndDate.toInstant()
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate()
+                        .atTime(task.getEndDate().toLocalTime())
+        );
+
+        if (task.getCalculationType() == CalculationType.CALENDAR_DAY) {
+            task.setCalculation(taskService.calculateTaskCalculationCalendarDay(task, process));
+        } else {
+            task.setCalculation(taskService.calculateTaskCalculationWorkDay(task, process));
+        }
+    } catch (ValidationException e) {
+        throw new RowMappingException(e, row, rowIndex);
+    }
+}
+
+
+
+private void applyExpectedEndDateAndCalculation(Task task, Row row, int rowIndex, String taskName)
+        throws RowMappingException {
+
+    Date expectedEndDate = getDate(row, EXPECTED_END_DATE_INDEX);
+    Double calculous = getDouble(row, CALCULOUS_INDEX);
+
+    if (expectedEndDate != null && calculous != null) {
+        throw new RowMappingException(
+                new ValidationException("Deadline Day or Calculous Rule 1 must be empty for task: " + taskName),
+                row,
+                rowIndex
+        );
+    }
+
+    if (expectedEndDate == null && calculous == null) {
+        throw new RowMappingException(
+                new ValidationException("one of Deadline Day or Calculous Rule 1 must not be empty for task: " + taskName),
+                row,
+                rowIndex
+        );
+    }
+
+    if (calculous != null) {
+        try {
+            task.setCalculation(calculous.intValue());
+
+            if (task.getCalculationType() == CalculationType.CALENDAR_DAY) {
+                task.setExpectedEndDate(taskService.calculateCalendarDay(task, process.getId()));
+            } else {
+                task.setExpectedEndDate(taskService.calculateWorkDay(task, process.getId()));
+            }
+        } catch (NumberFormatException e) {
+            throw new RowMappingException(
+                    new ValidationException(
+                            "Calculous Rule 1 value " + calculous + " is not a number for task: " + taskName,
+                            e
+                    ),
+                    row,
+                    rowIndex
+            );
+        } catch (ValidationException e) {
+            throw new RowMappingException(e, row, rowIndex);
+        }
+    } else {
+        try {
+            task.setExpectedEndDate(
+                    expectedEndDate.toInstant()
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+                            .atTime(task.getEndDate().toLocalTime())
+            );
+
+            if (task.getCalculationType() == CalculationType.CALENDAR_DAY) {
+                task.setCalculation(taskService.calculateTaskCalculationCalendarDay(task, process));
+            } else {
+                task.setCalculation(taskService.calculateTaskCalculationWorkDay(task, process));
+            }
+        } catch (ValidationException e) {
+            throw new RowMappingException(e, row, rowIndex);
+        }
+    }
+}
+
+
+
+
+
+
+
+applyExpectedEndDateAndCalculation(task, row, rowIndex, taskName);
+
+
+if (StringUtils.isNotBlank(commentString)) {
