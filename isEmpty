@@ -1,0 +1,7 @@
+if (!avoidMultiEntryService.getItems().isEmpty()) {
+
+if (doInvokeResult != null && !doInvokeResult.isEmpty()) {
+
+if (imageTeamList.isEmpty()) {
+
+if (imageSupProcessList.isEmpty()) {
