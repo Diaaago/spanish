@@ -1,34 +1,44 @@
-private String buildStepMessage(StepExecution stepExecution) {
+private void addSuccessMessage(JobExecution jobExecution) {
+    AtomicBoolean isPartial = new AtomicBoolean(false);
+
+    String message = jobExecution.getStepExecutions().stream()
+            .map(stepExecution -> buildStepMessage(stepExecution, isPartial))
+            .collect(Collectors.joining("; "));
+
+    message = appendFinalMessage(isPartial, message);
+    this.addMessage(jobExecution, message);
+}
+
+private String buildStepMessage(StepExecution stepExecution, AtomicBoolean isPartial) {
     StringBuilder buffer = new StringBuilder();
 
-    if (IMPORT_TASK_STEP.equals(stepExecution.getStepName())) {
-        buffer.append(stepExecution.getWriteCount()).append(" Tasks on ").append(stepExecution.getReadCount());
-    } else if (IMPORT_SUBPROCESS_STEP.equals(stepExecution.getStepName())) {
-        buffer.append(stepExecution.getWriteCount()).append(" Sub-process on ").append(stepExecution.getReadCount());
-    } else if (IMPORT_TEAM_STEP.equals(stepExecution.getStepName())) {
-        buffer.append(stepExecution.getWriteCount()).append(" Teams on ").append(stepExecution.getReadCount());
-    } else if (IMPORT_USER_STEP.equals(stepExecution.getStepName())) {
-        buffer.append(stepExecution.getWriteCount()).append(" Users on ").append(stepExecution.getReadCount());
+    if (stepExecution.getStepName().equals(IMPORT_TASK_STEP)) {
+        buffer.append(stepExecution.getWriteCount());
+        buffer.append(" Tasks on");
+        buffer.append(stepExecution.getReadCount());
+        updatePartialFlag(stepExecution, isPartial);
+    } else if (stepExecution.getStepName().equals(IMPORT_SUBPROCESS_STEP)) {
+        buffer.append(stepExecution.getWriteCount());
+        buffer.append(" Sub-process on");
+        buffer.append(stepExecution.getReadCount());
+        updatePartialFlag(stepExecution, isPartial);
+    } else if (stepExecution.getStepName().equals(IMPORT_TEAM_STEP)) {
+        buffer.append(stepExecution.getWriteCount());
+        buffer.append(" Teams on");
+        buffer.append(stepExecution.getReadCount());
+        updatePartialFlag(stepExecution, isPartial);
+    } else if (stepExecution.getStepName().equals(IMPORT_USER_STEP)) {
+        buffer.append(stepExecution.getWriteCount());
+        buffer.append(" Users on");
+        buffer.append(stepExecution.getReadCount());
+        updatePartialFlag(stepExecution, isPartial);
     }
 
     return buffer.toString();
 }
-private boolean isPartialStep(StepExecution stepExecution) {
-    return stepExecution.getWriteCount() != stepExecution.getReadCount();
-}
-private void addSuccessMessage(JobExecution jobExecution) {
-    boolean isPartial = jobExecution.getStepExecutions().stream()
-            .anyMatch(this::isPartialStep);
 
-    String message = jobExecution.getStepExecutions().stream()
-            .map(this::buildStepMessage)
-            .collect(Collectors.joining(", "));
-
-    if (isPartial) {
-        message = "Excel file has been partially integrated : " + message;
-    } else {
-        message = "Excel file has been fully integrated : " + message;
+private void updatePartialFlag(StepExecution stepExecution, AtomicBoolean isPartial) {
+    if (isPartialStep(stepExecution)) {
+        isPartial.set(true);
     }
-
-    this.addMessage(jobExecution, message);
 }
