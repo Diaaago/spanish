@@ -1,0 +1,162 @@
+@Test
+void testFormatCalculation_nullType() throws Exception {
+    Task task = new Task();
+    task.setCalculation(2);
+
+    Method method = ExportService.class.getDeclaredMethod("formatCalculation", Task.class);
+    method.setAccessible(true);
+
+    String result = (String) method.invoke(exportService, task);
+
+    assertEquals("", result);
+}
+@Test
+void testFormatCalculation_calendarDay() throws Exception {
+    Task task = new Task();
+    task.setCalculationType(CalculationType.CALENDAR_DAY);
+    task.setCalculation(2);
+
+    Method method = ExportService.class.getDeclaredMethod("formatCalculation", Task.class);
+    method.setAccessible(true);
+
+    String result = (String) method.invoke(exportService, task);
+
+    assertEquals("J+2 calendar", result);
+}
+@Test
+void testFormatCalculation_calendarDay() throws Exception {
+    Task task = new Task();
+    task.setCalculationType(CalculationType.CALENDAR_DAY);
+    task.setCalculation(2);
+
+    Method method = ExportService.class.getDeclaredMethod("formatCalculation", Task.class);
+    method.setAccessible(true);
+
+    String result = (String) method.invoke(exportService, task);
+
+    assertEquals("J+2 calendar", result);
+}
+@Test
+void testFormatCalculation_calendarDay() throws Exception {
+    Task task = new Task();
+    task.setCalculationType(CalculationType.CALENDAR_DAY);
+    task.setCalculation(2);
+
+    Method method = ExportService.class.getDeclaredMethod("formatCalculation", Task.class);
+    method.setAccessible(true);
+
+    String result = (String) method.invoke(exportService, task);
+
+    assertEquals("J+2 calendar", result);
+}
+@Test
+void testFormatCalculation_openingDay() throws Exception {
+    Task task = new Task();
+    task.setCalculation(0); 
+    task.setCalculationType(CalculationType.OPENING_DAY); 
+
+    Method method = ExportService.class.getDeclaredMethod("formatCalculation", Task.class);
+    method.setAccessible(true);
+
+    String result = (String) method.invoke(exportService, task);
+
+    assertEquals("J 0 opening", result);
+}
+@Test
+void testWriteDependencyCells_withRelatedTask() throws Exception {
+    XSSFWorkbook workbook = new XSSFWorkbook();
+    Sheet sheet = workbook.createSheet();
+    Row row = sheet.createRow(0);
+
+    Actor actor = new Actor();
+    actor.setName("Actor A");
+
+    SubProcess subProcess = new SubProcess();
+    subProcess.setName("SubProcess A");
+
+    Task relatedTask = new Task();
+    relatedTask.setName("Task A");
+    relatedTask.setActor(actor);
+    relatedTask.setSubProcess(subProcess);
+
+    Task task = new Task();
+    task.setRelatedTask(relatedTask);
+
+    Method method = ExportService.class.getDeclaredMethod("writeDependencyCells", Row.class, int.class, Task.class);
+    method.setAccessible(true);
+
+    int result = (int) method.invoke(exportService, row, 0, task);
+
+    assertEquals("Task A", row.getCell(0).getStringCellValue());
+    assertEquals("Actor A", row.getCell(1).getStringCellValue());
+    assertEquals("SubProcess A", row.getCell(2).getStringCellValue());
+    assertEquals(3, result);
+}
+@Test
+void testWriteDependencyCells_withRelatedTeam() throws Exception {
+    XSSFWorkbook workbook = new XSSFWorkbook();
+    Sheet sheet = workbook.createSheet();
+    Row row = sheet.createRow(0);
+
+    Team team = new Team();
+    team.setName("Team A");
+
+    Task task = new Task();
+    task.setRelatedTeam(team);
+
+    Method method = ExportService.class.getDeclaredMethod("writeDependencyCells", Row.class, int.class, Task.class);
+    method.setAccessible(true);
+
+    int result = (int) method.invoke(exportService, row, 0, task);
+
+    assertEquals("", row.getCell(0).getStringCellValue());
+    assertEquals("Team A", row.getCell(1).getStringCellValue());
+    assertEquals("", row.getCell(2).getStringCellValue());
+    assertEquals(3, result);
+}
+@Test
+void testWriteDependencyCells_withoutDependency() throws Exception {
+    XSSFWorkbook workbook = new XSSFWorkbook();
+    Sheet sheet = workbook.createSheet();
+    Row row = sheet.createRow(0);
+
+    Task task = new Task();
+
+    Method method = ExportService.class.getDeclaredMethod("writeDependencyCells", Row.class, int.class, Task.class);
+    method.setAccessible(true);
+
+    int result = (int) method.invoke(exportService, row, 0, task);
+
+    assertEquals("", row.getCell(0).getStringCellValue());
+    assertEquals("", row.getCell(1).getStringCellValue());
+    assertEquals("", row.getCell(2).getStringCellValue());
+    assertEquals(3, result);
+}
+@Test
+void testMergeRows_success() throws Exception {
+    XSSFWorkbook workbook = new XSSFWorkbook();
+    Sheet sheet = workbook.createSheet();
+
+    Method method = ExportService.class.getDeclaredMethod("mergeRows", Sheet.class, int.class, int.class, int.class);
+    method.setAccessible(true);
+
+    method.invoke(exportService, sheet, 0, 2, 1);
+
+    assertEquals(1, sheet.getNumMergedRegions());
+    assertEquals(0, sheet.getMergedRegion(0).getFirstRow());
+    assertEquals(2, sheet.getMergedRegion(0).getLastRow());
+    assertEquals(1, sheet.getMergedRegion(0).getFirstColumn());
+    assertEquals(1, sheet.getMergedRegion(0).getLastColumn());
+}
+@Test
+void testMergeRows_illegalArgumentException() throws Exception {
+    XSSFWorkbook workbook = new XSSFWorkbook();
+    Sheet sheet = workbook.createSheet();
+
+    Method method = ExportService.class.getDeclaredMethod("mergeRows", Sheet.class, int.class, int.class, int.class);
+    method.setAccessible(true);
+
+    assertDoesNotThrow(() -> method.invoke(exportService, sheet, 3, 1, 0));
+
+    assertEquals(0, sheet.getNumMergedRegions());
+}
