@@ -5,7 +5,29 @@
         .map(subProcessMapper::toDto)
         .collect(Collectors.toList());
 
+Hola Sergio,
 
+Quería informarte de que las tareas ya han sido completadas y desplegadas en el entorno de desarrollo (DEV).
+
+R2D2-WS:
+
+Sonar: los code smells se han reducido a 142, se ha eliminado la configuración de sonar.exclusions en el archivo POM y el coverage ha alcanzado el 80,6%.
+IQ Server: la versión de pf-spring ha sido actualizada a la 17.4.0 y la dependencia tika-core ha sido eliminada.
+Fortify: se han identificado las vulnerabilidades de nivel critical y high.
+La pipeline se ejecuta correctamente.
+
+R2D2-WEB:
+
+Sonar: los code smells se han reducido a 97, se ha eliminado el archivo de sonar exclusions del proyecto y el coverage cumple con los requisitos.
+IQ Server: Angular ha sido actualizado a la versión 21 y la dependencia hammerjs ha sido resuelta.
+Fortify: se han identificado las vulnerabilidades de nivel critical y high.
+La pipeline se ejecuta correctamente.
+
+Todos los cambios han sido desplegados en el entorno DEV y no se han detectado anomalías.
+
+Para más detalles, puedes consultar las tareas en JIRA.
+
+Si tienes cualquier duda, no dudes en comentármelo.
 
 
 
