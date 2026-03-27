@@ -488,13 +488,29 @@ void testMapRowWithExpectedEndDateAndCalendarDayValidationExceptionThrowsRowMapp
 
 
 @Test
+void testMapRowWithCalculousAndOpeningDayCalculation() {
+    row.createCell(RowTaskMapper.NAME_INDEX).setCellValue("Task A");
+    row.createCell(RowTaskMapper.HOUR_INDEX).setCellValue("10H00");
+    row.createCell(RowTaskMapper.CALCULOUS_INDEX).setCellValue(3.0);
+    row.createCell(RowTaskMapper.CALCULATION_TYPE_INDEX).setCellValue("Opening day");
+
+    when(taskService.calculateWorkDay(any(Task.class), anyLong()))
+            .thenReturn(endDate.plusDays(2).atTime(10, 0));
+
+    Task task = mapper.mapRow(row, 0);
+
+    assertThat(task).isNotNull();
+    assertThat(task.getCalculation()).isEqualTo(3);
+
+    verify(taskService).calculateWorkDay(any(Task.class), anyLong());
+}
+@Test
 void testMapRowWithExpectedEndDateAndCalendarDayCalculation() {
     row.createCell(RowTaskMapper.NAME_INDEX).setCellValue("Task A");
     row.createCell(RowTaskMapper.HOUR_INDEX).setCellValue("10H30");
     row.createCell(RowTaskMapper.CALCULATION_TYPE_INDEX).setCellValue("Calendar day");
 
-    Cell dateCell = row.createCell(RowTaskMapper.EXPECTED_END_DATE_INDEX);
-    dateCell.setCellValue(java.sql.Date.valueOf(endDate.plusDays(5)));
+    setDateCell(RowTaskMapper.EXPECTED_END_DATE_INDEX, endDate.plusDays(5));
 
     when(taskService.calculateTaskCalculationCalendarDay(any(Task.class), any(Process.class)))
             .thenReturn(5);
@@ -503,6 +519,7 @@ void testMapRowWithExpectedEndDateAndCalendarDayCalculation() {
 
     assertThat(task).isNotNull();
     assertThat(task.getCalculation()).isEqualTo(5);
+
     verify(taskService).calculateTaskCalculationCalendarDay(any(Task.class), any(Process.class));
 }
 @Test
@@ -511,8 +528,7 @@ void testMapRowWithExpectedEndDateAndOpeningDayCalculation() {
     row.createCell(RowTaskMapper.HOUR_INDEX).setCellValue("11H00");
     row.createCell(RowTaskMapper.CALCULATION_TYPE_INDEX).setCellValue("Opening day");
 
-    Cell dateCell = row.createCell(RowTaskMapper.EXPECTED_END_DATE_INDEX);
-    dateCell.setCellValue(java.sql.Date.valueOf(endDate.plusDays(4)));
+    setDateCell(RowTaskMapper.EXPECTED_END_DATE_INDEX, endDate.plusDays(4));
 
     when(taskService.calculateTaskCalculationWorkDay(any(Task.class), any(Process.class)))
             .thenReturn(4);
@@ -521,7 +537,6 @@ void testMapRowWithExpectedEndDateAndOpeningDayCalculation() {
 
     assertThat(task).isNotNull();
     assertThat(task.getCalculation()).isEqualTo(4);
+
     verify(taskService).calculateTaskCalculationWorkDay(any(Task.class), any(Process.class));
 }
-
-
