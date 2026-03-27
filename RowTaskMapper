@@ -540,3 +540,14 @@ void testMapRowWithExpectedEndDateAndOpeningDayCalculation() {
 
     verify(taskService).calculateTaskCalculationWorkDay(any(Task.class), any(Process.class));
 }
+private void setDateCell(int index, LocalDate date) {
+    Workbook workbook = row.getSheet().getWorkbook();
+
+    CreationHelper creationHelper = workbook.getCreationHelper();
+    CellStyle dateStyle = workbook.createCellStyle();
+    dateStyle.setDataFormat(creationHelper.createDataFormat().getFormat("yyyy-MM-dd"));
+
+    Cell cell = row.createCell(index);
+    cell.setCellValue(java.sql.Date.valueOf(date));
+    cell.setCellStyle(dateStyle);
+}
