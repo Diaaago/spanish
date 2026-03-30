@@ -1,0 +1,23 @@
+private void addFailureMessage(JobExecution jobExecution) {
+    jobExecution.getStepExecutions().stream()
+        .filter(stepExecution -> stepExecution.getStatus() == BatchStatus.FAILED)
+        .findFirst()
+        .ifPresent(stepExecution -> {
+            String message = stepExecution.getFailureExceptions().stream()
+                .filter(throwable -> throwable.getCause() != null)
+                .findFirst()
+                .map(throwable -> {
+                    log.error("throwable.getCause().getMessage(): {}", throwable.getCause().getMessage());
+                    String error = "The import has been finished with an unknown error";
+                    if (throwable.getCause() instanceof RowMappingException) {
+                        RowMappingException rowMappingException =
+                            (RowMappingException) throwable.getCause();
+                        error = rowMappingException.getMessage();
+                    }
+                    return error;
+                })
+                .orElse("The import has been finished with an unknown error");
+
+            this.addMessage(jobExecution, message);
+        });
+}
