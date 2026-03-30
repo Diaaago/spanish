@@ -1,0 +1,43 @@
+npm ls @compodoc/compodoc
+npm ls handlebars
+npm ls @angular-devkit/core
+npm ls undici
+
+node -v
+npm -v
+"engines": {
+  "node": "^20.19.0 || ^22.12.0 || >=24.0.0"
+}
+
+npm install @compodoc/compodoc@1.2.1
+{
+  "dependencies": {
+    "@compodoc/compodoc": "1.2.1"
+  },
+  "overrides": {
+    "undici": "^7.24.0",
+    "handlebars": "4.7.9"
+  }
+}
+npm install
+
+comment：This field is part of the existing schema
+
+cycle：Accepted. This dependency is inherited from the current database schema and entity relationship design. Resolving it would require broader refactoring across mappings and related business logic. No functional or security issue has been identified, so it is accepted for now.
+
+transaction：Accepted. This self-invocation bypasses Spring proxy-based transactions, but the method is currently used in a read-only context with no observed issues. Refactoring may impact existing behavior, so it is accepted for now.
+
+collect：Accepted. Replacing Collectors.toList() with Stream.toList() would introduce an unmodifiable list, potentially impacting existing or future logic that relies on mutability. Since there is no functional issue, the current implementation is retained.
+
+unused：Accepted. The method is intentionally kept for potential future use to support extensibility and maintain consistency with the surrounding helper logic. It does not impact current functionality.
+Accepted. Although currently unused, the method is intentionally retained to support potential future enhancements and to keep related helper logic grouped together. It has no impact on current functionality or runtime behavior.
+
+sanitize：False positive. This endpoint is a REST API and does not render HTML content. The returned value is obtained from the authenticated principal via HttpServletRequest#getRemoteUser(), and is returned as plain response data rather than being interpreted as executable content in a browser. Therefore, reflected XSS is not 
+applicable in this context.
+
+False positive. This endpoint is implemented as a REST API in a @RestController and returns the authenticated user identifier as a plain response body, not as server-rendered HTML. The value comes from HttpServletRequest#getRemoteUser(), which is populated from the authenticated security context rather than directly from arbitrary request input. Under the current design, the response is consumed as API data and not interpreted as executable HTML/JavaScript, so reflected XSS is not applicable 
+here.
+
+False positive. The endpoint is a REST API and does not render HTML content. request.getRemoteUser() returns the authenticated principal from the server security context, and the value is returned as plain API response data rather than being injected into a browser-rendered page. Therefore this does not constitute a practical reflected XSS vector.
+
+Marked as False Positive. Although the rule detects reflected user-related data, this controller is a REST endpoint and does not generate HTML output. The returned value is obtained from the authenticated server-side principal via HttpServletRequest#getRemoteUser(), not from arbitrary unsanitized request parameters. The response is used as API data and is not executed by the browser as script, so the reported reflected XSS risk is not applicable in this context.
