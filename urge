@@ -1,0 +1,29 @@
+echo "=== package / lock scan ==="
+grep -RInE '"axios"|"@qqbrowser/openclaw-qbot"|"@shadanai/openclaw"' package.json package-lock.json 2>/dev/null
+
+echo "=== suspicious versions in lockfile ==="
+grep -RInE '1\.14\.1|0\.30\.4|0\.0\.130|2026\.3\.28-2|2026\.3\.28-3|2026\.3\.31-1|2026\.3\.31-2' package-lock.json 2>/dev/null
+
+echo "=== installed dependency tree ==="
+npm ls axios @qqbrowser/openclaw-qbot @shadanai/openclaw --all 2>/dev/null
+
+
+
+
+
+
+echo "=== package / lock scan ==="
+grep -RInE '"axios"|"@qqbrowser/openclaw-qbot"|"@shadanai/openclaw"' package.json package-lock.json
+
+echo "=== suspicious versions in lockfile ==="
+grep -RInE '1\.14\.1|0\.30\.4|0\.0\.130|2026\.3\.28-2|2026\.3\.28-3|2026\.3\.31-1|2026\.3\.31-2' package-lock.json
+
+echo "=== installed dependency tree ==="
+npm ls axios @qqbrowser/openclaw-qbot @shadanai/openclaw --all
+
+
+grep -RInE '"axios"|"@qqbrowser/openclaw-qbot"|"@shadanai/openclaw"' package.json package-lock.json
+
+grep -RInE '1\.14\.1|0\.30\.4|0\.0\.130|2026\.3\.28-2|2026\.3\.28-3|2026\.3\.31-1|2026\.3\.31-2' package-lock.json
+
+npm ls axios @qqbrowser/openclaw-qbot @shadanai/openclaw --all
