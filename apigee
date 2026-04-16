@@ -1,0 +1,145 @@
+Design
+
+Rule: API0-R2 — API authorization security protocol
+Coverage: Partial
+Note: The guideline clearly covers OAuth2/OIDC flows, including Authorization Code with PKCE and Client Credentials. However, it does not fully cover the BFF-specific constraints, browser-based client requirements, cookie-based session handling, or the requirement that API credentials must remain server-side and must not transit through the client.
+
+Rule: API0-R3 — API security architecture
+Coverage: Full
+Note: The guideline strongly positions the gateway/proxy as the front-door security layer for exposed APIs. This is well aligned with the requirement that external-facing API traffic must go through an API Provider in the exposition layer.
+
+Rule: API3-R1 — Need to know principle
+Coverage: Partial
+Note: The guideline covers field-level scoping, response filtering, and excessive data exposure controls. However, it does not explicitly define the broader business-duty-based “need-to-know” principle.
+
+Rule: API3-R4 — Least-privilege principle
+Coverage: Partial
+Note: The guideline supports least-privilege concepts through RBAC/ABAC, restricted access, and strict access boundaries. However, it does not fully formalize all rule details, such as prohibiting over-privileged tokens or ensuring each client selects only the strictly necessary grant flows.
+
+Network
+
+Rule: API0-R1 — API network security protocol
+Coverage: High Partial
+Note: TLS 1.2+, cipher suite review, certificate validation, pinning, and mTLS are covered. However, enterprise-specific cryptographic baseline requirements are not fully detailed.
+
+Rule: API7-R3 — Security HTTP headers
+Coverage: Partial
+Note: The guideline covers header sanitization, internal header stripping, and caching-related concerns. However, it does not fully enumerate all mandatory headers and header rules such as X-Content-Type-Options: nosniff, Cache-Control, Pragma, Expires, and removal of fingerprinting headers.
+
+Token
+
+Rule: API2-R2 — Tokens lifespan
+Coverage: Partial
+Note: Token expiration, rotation, and revocation are covered. However, the exact enterprise maximum lifetimes for each token type and each grant flow are not specified.
+
+Rule: API2-R3 — Tokens format
+Coverage: Partial
+Note: Token validation is addressed, but the guideline does not fully cover token format requirements such as opaque versus JWT/JWE usage, entropy and minimum length expectations, replay-resistance, or prohibited algorithms.
+
+Rule: API2-R4 — SSO lifespan
+Coverage: None
+Note: The guideline does not define SSO idle timeout, maximum SSO lifespan, or synchronization requirements between SSO session duration and access token lifetime.
+
+Rule: API2-R5 — Tokens management
+Coverage: Partial
+Note: The guideline covers token exposure risks in logs, URLs, and client-exposed locations, and it includes revocation-related checks. However, it does not fully cover client-specific storage requirements, refresh token restrictions, rotation constraints, or detailed lifecycle handling rules.
+
+Client
+
+Rule: API2-R1 — Grant flow
+Coverage: Partial
+Note: Secure flows such as Authorization Code with PKCE and Client Credentials are covered. However, the full decision matrix based on client trust level, user/app context, and data type is not explicitly defined.
+
+Rule: API2-R7 — Client authentication
+Coverage: Partial
+Note: mTLS and token validation logic are covered. However, detailed requirements such as certificate-to-client mapping, claim-level JWT authentication checks, and dedicated CA expectations are not fully documented.
+
+Rule: API2-R8 — Session management
+Coverage: None
+Note: The guideline does not address inactivity timeout, absolute timeout, logout invalidation, concurrent session controls, or password-change session termination.
+
+Rule: API2-R9 — End-user Authentication
+Coverage: None
+Note: The guideline addresses secure authentication flows, but it does not define authentication strength requirements such as MFA versus single-factor authentication based on confidentiality or integrity level.
+
+Rule: API2-R10 — Client Identification
+Coverage: None
+Note: The guideline does not explicitly require each client_id or API key to be unique and dedicated to a single component.
+
+Rule: API6-R1 — Replay attacks
+Coverage: Partial
+Note: Short-lived token controls help reduce replay risk, but explicit nonce handling and additional replay protection requirements for sensitive requests are not fully covered.
+
+Authorization
+
+Rule: API1-R1 — Fine-grained authorizations
+Coverage: Partial
+Note: RBAC, ABAC, BOLA, field-level scoping, and object-level access controls are strongly covered. However, the full layered responsibility model between API provider and business service provider is not fully described.
+
+Rule: API3-R2 — Secret data
+Coverage: Partial
+Note: Sensitive data protection, masking, and exposure reduction are covered. However, the strict prohibition that APIs must not expose secret data is not stated as explicitly as in the enterprise rule.
+
+Rule: API3-R3 — Technical API
+Coverage: Partial
+Note: Internal exposure risks are addressed, but the explicit prohibition on exposing technical or administrative APIs over the internet is not clearly formalized.
+
+Rule: API5-R1 — Scope
+Coverage: Partial
+Note: Scopes, authorization matrices, and access boundaries are discussed. However, scope design driven by data classification, least privilege, and client/version governance is not fully covered.
+
+Protection
+
+Rule: API2-R6 — OpenID Connect Authorization Code Grant specifics
+Coverage: Partial
+Note: Authorization Code + PKCE and secure OAuth/OIDC flows are covered. However, redirect URI restrictions, native-app browser selection, and user-agent-specific rules are not fully detailed.
+
+Rule: API4-R1 — Rate limiting
+Coverage: Full
+Note: Per-client, per-token, per-IP rate limits, quotas, and abuse-related protections are clearly covered.
+
+Rule: API7-R1 — Cross-Origin Resource Sharing (CORS)
+Coverage: High Partial
+Note: Strict CORS configuration, allowed origins, methods, and headers are covered. However, some exact prohibitions from the enterprise rule, such as Access-Control-Allow-Credentials, are not fully spelled out.
+
+Rule: API7-R2 — Errors management
+Coverage: Full
+Note: Sanitized, non-verbose error handling and error leakage checks are clearly covered.
+
+Rule: API7-R4 — Predictable Resource Location attack
+Coverage: Full
+Note: The guideline explicitly addresses endpoint exposure, routing visibility, crawler indexing, and predictable path concerns.
+
+Rule: API7-R5 — Cross-Site Request Forgery (CSRF) attack
+Coverage: None
+Note: The guideline does not explicitly define state parameter requirements such as one-time use, session specificity, and unpredictability.
+
+Rule: API7-R6 — Vulnerability testing for internet-facing API
+Coverage: Partial
+Note: Vulnerability testing is strongly encouraged, but the required testing frequency and release timing are not fully specified.
+
+Rule: API7-R7 — Penetration testing for internet-facing API
+Coverage: Partial
+Note: Pentesting methodology is covered, but the mandatory recurrence, timing, and minimum gray-box requirement are not fully defined.
+
+Rule: API8-R1 — Parameters attack
+Coverage: Full
+Note: Schema validation, input sanitization, malformed payload handling, file-upload controls, and injection prevention are strongly covered.
+
+Rule: API8-R2 — Secure coding
+Coverage: Partial
+Note: SAST, DAST, and static analysis are covered. However, the explicit requirement for mandatory code audit before go-live and mandatory remediation of critical/high issues is not fully stated.
+
+Rule: API10-R1 — Traceability
+Coverage: High Partial
+Note: Logging, correlation IDs, SIEM integration, monitoring, and alerting are covered. However, log anti-tampering, retention period, local storage limits, and full event coverage are not completely specified.
+
+Others / Governance
+
+Rule: API9-R1 — Governance
+Coverage: Partial
+Note: API inventory, documentation, and OpenAPI specification review are covered. However, the full governance registry content required by the enterprise rule is not fully defined.
+
+Rule: API9-R2 — Unused API
+Coverage: None
+Note: The guideline does not explicitly require deactivation or deletion of APIs that have not been used for six months.
